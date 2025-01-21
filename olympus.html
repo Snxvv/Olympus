@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Olympus Scan</title>
+		<meta charset="UTF-8">
+		<link rel="stylesheet" href="olympus.css" />
+		<!-- ☈ -->
+		<link rel="shortcut icon" href="images/icon.png">
+	</head>
+	<body>
+		<div id="blur-wrapper">
+			<!-- List of existing redirects -->
+			<div class="redirect-table">
+				<div class="redirect-rows">
+					<div class="redirect-row" id="redirect-row-template" >
+							<h4 style="display: none !important;"><span class="disabled-marker" data-show="disabled">[Disabled] </span><span data-bind="description" data-class="disabled:disabled"></span></h4>
+							<div class="redirect-info" data-class="disabled:disabled">
+								<div style="display: none !important;">
+									<label>Redirect:</label>
+									<p data-bind="includePattern"></p>
+								</div>
+								<div style="display: none !important;">
+									<label>to:</label><p data-bind="redirectUrl"></p>
+								</div>
+								<div style="display: none !important;" data-show="excludePattern">
+									<label>excluding:</label><p data-bind="excludePattern"></p>
+								</div>
+								<div style="display: none !important;" data-show="patternDesc">
+									<label>Hint:</label><p data-bind="patternDesc"></p>
+								</div>
+								<div>
+									<label>Redirect:</label> <p><span class="error" data-show="r.error" data-bind="error"></span><span data-show="exampleResult" data-bind="exampleUrl"></span> <span class="arrow">‎ &rarr;‎ ‎ </span> <span data-bind="exampleResult"></span></p>
+								</div>
+								<div style="display: none !important;">
+									<label>Applies to:</label> <p data-bind="appliesToText"></p>
+								</div>
+							</div>
+						</div>
+					</div>
+			</div>
+
+		</div>
+
+		<script src="js/util.js"></script>
+		<script src="js/redirect.js"></script>
+		<script src="js/redirectorpage.js"></script>
+	</body>
+</html>
