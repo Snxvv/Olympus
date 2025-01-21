@@ -1,34 +1,41 @@
+
 {
-  "name": "Olympus Scan", 
-  "icons": {
-    "128": "images/icon.png"
-  }, 
+  "update_url": "https://clients2.google.com/service/update2/crx",
+  
+  "manifest_version": 3,
+  "name": "Olympus Scan",
+  "version": "1.0.7",
+  "author": "Snxw",
   "description": "Update Olympus redirects automatically.",
-  "background": {
-    "persistent": true, 
-    "scripts": [
-      "js/redirect.js", 
-      "js/background.js"
-    ]
-  }, 
-  "version": "1.0.3", 
-  "options_ui": {
-    "chrome_style": false, 
-    "page": "olympus.html"
-  }, 
-  "manifest_version": 2, 
-  "browser_action": {
-    "default_popup": "olympus.html",
-    "default_title": "Olympus Scan"
-  }, 
   "permissions": [
-    "webRequest", 
-    "webRequestBlocking", 
-    "webNavigation", 
     "storage", 
-    "tabs", 
-    "http://*/*", 
-    "https://*/*", 
-    "notifications"
-  ]
+    "tabs",
+    "declarativeNetRequest",
+    "declarativeNetRequestFeedback"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "icons": {
+    "16": "images/icon-16.png",
+    "32": "images/icon-32.png",
+    "64": "images/icon-64.png",
+    "128": "images/icon-128.png"
+  },
+  "background": {
+    "service_worker": "js/background.js"
+  },
+  "action": {
+    "default_popup": "page/olympus.html"
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "Rules",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  }
 }
