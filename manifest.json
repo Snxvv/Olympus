@@ -10,6 +10,7 @@
   "permissions": [
     "storage", 
     "tabs",
+    "scripting",
     "declarativeNetRequest",
     "declarativeNetRequestFeedback"
   ],
@@ -27,8 +28,15 @@
     "service_worker": "js/background.js"
   },
   "action": {
-    "default_popup": "page/olympus.html"
+    "default_popup": "popup/page.html"
   },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["page/script.js"],
+      "css": ["page/style.css"]
+    }
+  ],
   "declarative_net_request": {
     "rule_resources": [
       {

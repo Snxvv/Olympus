@@ -102,3 +102,10 @@ chrome.runtime.onInstalled.addListener(async function (){
 		]
 	});
 });
+
+// chrome.webRequest.onCompleted.addListener(
+//     (details) => {
+// 		chrome.tabs.sendMessage(details.tabId, { data: details });
+//     },
+//     { urls: ["https://dashboard.olympuslectura.com/api/*"] }
+// );
