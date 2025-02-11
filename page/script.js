@@ -130,7 +130,25 @@ function ifDomain(f) {
         domain: ""
     }, function(obj) {
         if (window.location.href.startsWith(obj.domain)) {
-            f()
+            f(obj.domain)
+        }
+    })
+}
+
+async function SearchSerie(name, type) {
+    const o_name =  name
+    const filtered_specials = name.split(/[^a-zA-Z0-9áéíóúüÁÉÍÓÚÜ\s]+/).map(p => p.trim()).filter(p => p.length > 0)
+    if (filtered_specials.length > 1) {
+        name = filtered_specials.sort((a, b) => b.length - a.length)[0]
+    } else {
+        name = name.startsWith(name.match(/\S*[áéíóúü]\S*/i)[0]) ? name.replace(`${name.match(/\S*[áéíóúü]\S*/i)[0]} `, "").trim() : name
+    }
+
+    const res = JSON.parse(await fetch(`https://dashboard.olympuslectura.com/api/search?name=${name.substring(0, 40)}`).then(response => response.text()))
+
+    return (res.data && res.data.length > 0) && await res.data.find(i => {
+        if (i.name.toLowerCase() === o_name.toLowerCase() && i.type === type) {
+            return i
         }
     })
 }
@@ -139,10 +157,28 @@ const Data = {}
 function Load() {
     lastURL = window.location.href
 
-    ifDomain(async function() {
+    ifDomain(async function(domain) {
+        console.log(domain)
         let serie_data = (window.location.pathname.startsWith('/series/') || window.location.pathname.startsWith('/capitulo/')) && (Data[window.location.pathname.split('/')[window.location.pathname.startsWith('/series/') ? 2 : 3]] || JSON.parse(await fetch(`https://${window.location.host}/api/series/${window.location.pathname.split('/')[window.location.pathname.startsWith('/series/') ? 2 : 3].split(/-(.+)/)[1]}?type=${(window.location.pathname.split('/')[window.location.pathname.startsWith('/series/') ? 2 : 3].split(/-(.+)/)[0]) === "novela" ? "novel" : "comic"}`).then(response => response.text())))
-        if (serie_data && typeof serie_data == 'object' && serie_data.data) { Data[window.location.pathname.split('/')[window.location.pathname.startsWith('/series/') ? 2 : 3]] = serie_data } else { serie_data = null }
+        if (serie_data && typeof serie_data == 'object' && serie_data.data) {
+            Data[window.location.pathname.split('/')[window.location.pathname.startsWith('/series/') ? 2 : 3]] = serie_data
+        } else {
+            serie_data = null
 
+            no_data_url = window.location.href
+            if (window.location.pathname.startsWith('/capitulo/')) {
+                const h1 = await waitForElm("#__nuxt .sf-ripple-container") && await waitForElm("#__nuxt > div > div > header > div > div > div.flex-center.px-4 > div > a > h1")
+                if (h1?.textContent.length > 0) {
+                    const serie = await SearchSerie(h1.textContent, ((window.location.pathname.split('/')[3].split(/-(.+)/)[0]) === "novela" ? "novel" : "comic"))
+
+                    if (serie) window.location.href = window.location.href.replace(window.location.pathname.split('/')[3].split(/-(.+)/)[1], serie.slug)
+                }
+            } else if (window.location.pathname.startsWith('/series/')) {
+
+            }
+        }
+
+        // Boton de favoritos
         if (!document.getElementById("extension_button_addserie") && window.location.pathname.startsWith("/series/")) {
             const serie_actions = await waitForElm("#__nuxt > div > main > div > div:nth-child(1) > div.p-8.relative.bg-gray-800.rounded-md.min-w-80.lg\\:max-w-80.overflow-hidden > div.z-10.relative.flex.flex-col.items-center.gap-4.text-center > div:nth-child(4) > button:nth-child(1).sf-ripple-container").then(elm => elm.parentElement)
             
@@ -207,6 +243,7 @@ function Load() {
             serie_actions.insertBefore(button, serie_actions.firstChild);
         }
 
+        // Boton de menu
         if (!document.getElementById("extension_button_series")) {
             const header_buttons = await waitForElm("#__nuxt header button.sf-ripple-container").then(elm => {
                 if (!elm.parentElement.classList.contains('flex-end')) {
@@ -315,7 +352,7 @@ function Load() {
                     history: {},
                     series: []
                 }, async function(obj) {
-                    Object.values(obj.history).sort((a, b) => b.time - a.time).map(i => {
+                    Object.entries(obj.history).sort((a, b) => b.time - a.time).map(([k, i]) => {
                         const timeSince = (() => {
                             const now = new Date();
                             const seconds = Math.floor((now - i.time) / 1000);
@@ -340,48 +377,74 @@ function Load() {
                             }
                         })()
 
-                        const element = create('div', { id: 'history_element', class: 'p-2 md:p-4 bg-gray-800 rounded-md relative', style: 'height: min-content; margin: 5px;' }, [
-                            create('div', { class: 'absolute top-0 left-0 h-full', style: 'opacity: .4;' }, [
-                                create('div', { class: 'relative rounded-l-md h-full aspect-square' }, [
-                                    create('img', {
-                                        src: i.serie.cover,
-                                        alt: i.serie.name,
-                                        loading: 'lazy',
-                                        class: 'object-cover rounded-inherit w-full h-full',
-                                        style: 'min-height: initial;'
+                        function newElement(i) {
+                            const element =  create('div', { id: 'history_element', class: 'p-2 md:p-4 bg-gray-800 rounded-md relative', style: 'height: min-content; margin: 5px;' }, [
+                                create('div', { class: 'absolute top-0 left-0 h-full', style: 'opacity: .4;' }, [
+                                    create('div', { class: 'relative rounded-l-md h-full aspect-square' }, [
+                                        create('img', {
+                                            src: i.serie.cover,
+                                            alt: i.serie.name,
+                                            loading: 'lazy',
+                                            class: 'object-cover rounded-inherit w-full h-full',
+                                            style: 'min-height: initial;'
+                                        })
+                                    ]),
+                                    create('div', {
+                                        class: 'absolute bottom-0 left-0 h-full aspect-square bg-gradient-to-r from-transparent via-gray-800/85 to-gray-800'
                                     })
                                 ]),
-                                create('div', {
-                                    class: 'absolute bottom-0 left-0 h-full aspect-square bg-gradient-to-r from-transparent via-gray-800/85 to-gray-800'
-                                })
-                            ]),
-                            create('figure', { class: 'flex items-center gap-4 z-20 relative' }, [
-                                create('div', { class: 'w-full' }, [
-                                    create('div', { class: 'flex-between', style:'margin-bottom: 5px;' }, [
-                                        create('a', {
-                                            href: `/capitulo/${i.id}/${i.serie.type === "novel" ? "novela" : "comic"}-${i.serie.slug}`,
-                                            class: 'rounded'
-                                        }, [
-                                            create('figcaption', { class: 'font-medium text-base' }, [`Capítulo ${i.name}`])
+                                create('figure', { class: 'flex items-center gap-4 z-20 relative' }, [
+                                    create('div', { class: 'w-full' }, [
+                                        create('div', { class: 'flex-between', style:'margin-bottom: 5px;' }, [
+                                            create('a', {
+                                                href: `/capitulo/${i.id}/${i.serie.type === "novel" ? "novela" : "comic"}-${i.serie.slug}`,
+                                                class: 'rounded'
+                                            }, [
+                                                create('figcaption', { class: 'font-medium text-base' }, [`Capítulo ${i.name}`])
+                                            ]),
+                                            create('time', { class: 'text-xs text-gray-500 first-letter:capitalize', datetime: i.time }, [ timeSince ])
                                         ]),
-                                        create('time', { class: 'text-xs text-gray-500 first-letter:capitalize', datetime: i.time }, [ timeSince ])
-                                    ]),
-                                    create('div', { class: 'flex-between' }, [
-                                        create('a', {
-                                            href: `/series/${i.serie.type === "novel" ? "novela" : "comic"}-${i.serie.slug}`,
-                                            class: 'text-amber-300 text-xs font-light'
-                                        }, [ i.serie.name ]),
-                                        create('button', { id: 'history_update_button', class: 'absolute aspect-square rounded-full hover:bg-gray-800 transition-background-color text-rose-300 sf-ripple-container', style: 'height: 20px; width: 20px; right: 0; justify-content: center; align-items: center;' }, [
-                                            create('i', { class: 'text-2xl i-heroicons-exclamation-triangle', style: 'height: 16px; width: 16px;' })
-                                        ])
-                                    ]),
+                                        create('div', { class: 'flex-between' }, [
+                                            create('a', {
+                                                href: `/series/${i.serie.type === "novel" ? "novela" : "comic"}-${i.serie.slug}`,
+                                                class: 'text-amber-300 text-xs font-light'
+                                            }, [ i.serie.name ]),
+                                            create('button', { title: 'Actualizar Links', id: 'history_update_button', class: 'absolute aspect-square rounded-full hover:bg-gray-800 transition-background-color text-rose-300 sf-ripple-container', style: 'height: 20px; width: 20px; right: 0; justify-content: center; align-items: center;' }, [
+                                                create('i', { class: 'text-2xl i-heroicons-exclamation-triangle', style: 'height: 16px; width: 16px;' })
+                                            ])
+                                        ]),
+                                    ])
                                 ])
                             ])
-                        ])
-                        SetButton(element.getChild('figure').getChild('div').getChild('div[2]').getChild('button'), function() {
+                            
+                            SetButton(element.getChild('figure').getChild('div').getChild('div[2]').getChild('button'), async function() {
+                                if (!JSON.parse(await fetch(`https://${window.location.host}/api/series/${i.serie.slug}?type=${i.serie.type}`).then(response => response.text()))) {
+                                    console.log("Change links")
 
-                        })
-                        history_container.appendChild(element)
+                                    const serie = await SearchSerie(i.serie.name, i.serie.type)
+
+                                    if (serie) {
+                                        storageArea.get({
+                                            history: {}
+                                        }, async function(v) {
+                                            const history = v.history
+                                            history[k].serie = JSON.parse(await fetch(`https://${window.location.host}/api/series/${serie.slug}?type=${serie.type}`).then(response => response.text())).data
+
+                                            element.innerHTML = ''
+                                            newElement(history[k]).$$children.map(e => element.appendChild(e))
+
+                                            storageArea.set({
+                                                history: history
+                                            })
+                                        })
+                                    }
+                                }
+                            })
+
+                            return element
+                        }
+
+                        history_container.appendChild(newElement(i))
                     })
                     obj.series.map(i => {
                         favorites_container.appendChild(create('figure', { class: 'relative overflow-hidden rounded-md snap-start', style:'min-width: 160px; width: 160px; margin: 5px;' }, [
@@ -421,6 +484,7 @@ function Load() {
             header_buttons.insertBefore(button, header_buttons.firstChild);
         }
 
+        // Guardar historial
         if (window.location.pathname.startsWith('/capitulo/') && serie_data) {
             await storageArea.get({
                 history: {}
@@ -449,18 +513,14 @@ function Load() {
     })
 }
 
-const observer = new MutationObserver((mutations) => {
+const observer = new MutationObserver(async (mutations) => {
     for (const mutation of mutations) {
         Load();
-        // if (lastURL !== window.location.href) {
-        //     Load();
-        // }
     }
 });
 
-observer.observe(document.body, { childList: true, subtree: true });
-// window.addEventListener("popstate", (e) => {
-//     Load();
-// });
+ifDomain(function() {
+    observer.observe(document.head.querySelector('title'), { childList: true, subtree: true });
 
-Load()
+    Load()
+})

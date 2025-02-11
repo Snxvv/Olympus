@@ -42,9 +42,9 @@
     color: rgb(245 158 11 / 1);
 }
 
-/* #history_element:hover #history_update_button {
+#history_element:hover #history_update_button {
     display: flex;
-} */
+}
 #history_update_button {
     display: none;
 }
