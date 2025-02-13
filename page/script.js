@@ -361,9 +361,9 @@ function Load() {
                             history: {},
                             series: []
                         }, async function(obj) {
-                            const history = obj.history
+                            const history = Object.entries(obj.history).sort(([_1, a], [_2, b]) => b.time - a.time)
                             const series = obj.series
-                            Object.entries(history).sort((a, b) => b.time - a.time).map(([k, i]) => {
+                            history.map(([_, i]) => {
                                 const timeSince = (() => {
                                     const now = new Date();
                                     const seconds = Math.floor((now - i.time) / 1000);
@@ -387,7 +387,7 @@ function Load() {
                                         return `hace unos segundos`;
                                     }
                                 })()
-    
+                                
                                 function newElement(i) {
                                     const element =  create('div', { id: 'history_element', class: 'p-2 md:p-4 bg-gray-800 rounded-md relative', style: 'height: min-content; margin: 5px;' }, [
                                         create('div', { class: 'absolute top-0 left-0 h-full', style: 'opacity: .4;' }, [
@@ -446,10 +446,10 @@ function Load() {
     
                                     async function CheckLinks(e) {
                                         e.preventDefault();
-                                        if (!history[k].disabled && !Checked) {
+                                        if (!i.disabled && !Checked) {
                                             Checked = true
                                             try { await fetch(`https://${window.location.host}/api/series/${i.serie.slug}?type=${i.serie.type}`).then(response => {
-                                                history[k].disabled = !response.ok
+                                                i.disabled = !response.ok
     
                                                 if (!response.ok) {
                                                     chapt_button.classList.add('text-slate-500')
@@ -461,11 +461,11 @@ function Load() {
                                                 }
     
                                                 storageArea.set({
-                                                    history: history
+                                                    history: history.reduce((acc, [key, value]) => { acc[key] = value; return acc; }, {})
                                                 })
                                             }) } catch (error) {}
                                         }
-                                        if (history[k].disabled) return
+                                        if (i.disabled) return
     
                                         if (e.button === 1 || (e.ctrlKey || e.metaKey)) {
                                             window.open(this.href, '_blank')
@@ -481,23 +481,158 @@ function Load() {
                                         const serie = await SearchSerie(i.serie.name, i.serie.type)
     
                                         if (serie) {
-                                            history[k].serie = JSON.parse(await fetch(`https://${window.location.host}/api/series/${serie.slug}?type=${serie.type}`).then(response => response.text())).data
-                                            delete history[k].disabled;
+                                            i.serie = JSON.parse(await fetch(`https://${window.location.host}/api/series/${serie.slug}?type=${serie.type}`).then(response => response.text())).data
+                                            delete i.disabled;
     
                                             element.innerHTML = ''
-                                            newElement(history[k]).$$children.map(e => element.appendChild(e))
+                                            newElement(i).$$children.map(e => element.appendChild(e))
     
                                             storageArea.set({
-                                                history: history
+                                                history: history.reduce((acc, [key, value]) => { acc[key] = value; return acc; }, {})
                                             })
                                         }
                                     })
     
                                     return element
                                 }
-    
+                                
                                 history_container.appendChild(newElement(i))
                             })
+                            // Object.entries(history).sort((a, b) => b.time - a.time).map(async ([k, i]) => {
+                            //     const timeSince = (() => {
+                            //         const now = new Date();
+                            //         const seconds = Math.floor((now - i.time) / 1000);
+                            //         const minutes = Math.floor(seconds / 60);
+                            //         const hours = Math.floor(seconds / 3600);
+                            //         const days = Math.floor(seconds / 86400);
+                            //         const months = Math.floor(seconds / 2592000);
+                            //         const years = Math.floor(seconds / 31536000);
+                                
+                            //         if (years > 0) {
+                            //             return `hace ${years} año${years > 1 ? 's' : ''}`;
+                            //         } else if (months > 0) {
+                            //             return `hace ${months} mes${months > 1 ? 'es' : ''}`;
+                            //         } else if (days > 0) {
+                            //             return `hace ${days} día${days > 1 ? 's' : ''}`;
+                            //         } else if (hours > 0) {
+                            //             return `hace ${hours} hora${hours > 1 ? 's' : ''}`;
+                            //         } else if (minutes > 0) {
+                            //             return `hace ${minutes} minuto${minutes > 1 ? 's' : ''}`;
+                            //         } else {
+                            //             return `hace unos segundos`;
+                            //         }
+                            //     })()
+    
+                            //     function newElement(i) {
+                            //         const element =  create('div', { id: 'history_element', class: 'p-2 md:p-4 bg-gray-800 rounded-md relative', style: 'height: min-content; margin: 5px;' }, [
+                            //             create('div', { class: 'absolute top-0 left-0 h-full', style: 'opacity: .4;' }, [
+                            //                 create('div', { class: 'relative rounded-l-md h-full aspect-square' }, [
+                            //                     create('img', {
+                            //                         src: i.serie.cover,
+                            //                         alt: i.serie.name,
+                            //                         loading: 'lazy',
+                            //                         class: 'object-cover rounded-inherit w-full h-full',
+                            //                         style: 'min-height: initial;'
+                            //                     })
+                            //                 ]),
+                            //                 create('div', {
+                            //                     class: 'absolute bottom-0 left-0 h-full aspect-square bg-gradient-to-r from-transparent via-gray-800/85 to-gray-800'
+                            //                 })
+                            //             ]),
+                            //             create('figure', { class: 'flex items-center gap-4 z-20 relative' }, [
+                            //                 create('div', { class: 'w-full' }, [
+                            //                     create('div', { class: 'flex-between', style:'margin-bottom: 5px;' }, [
+                            //                         create('a', {
+                            //                             href: `/capitulo/${i.id}/${i.serie.type === "novel" ? "novela" : "comic"}-${i.serie.slug}`,
+                            //                             class: 'rounded'
+                            //                         }, [
+                            //                             create('figcaption', { class: 'font-medium text-base' }, [`Capítulo ${i.name}`])
+                            //                         ]),
+                            //                         create('time', { class: 'text-xs text-gray-500 first-letter:capitalize', datetime: i.time }, [ timeSince ])
+                            //                     ]),
+                            //                     create('div', { class: 'flex-between' }, [
+                            //                         create('a', {
+                            //                             href: `/series/${i.serie.type === "novel" ? "novela" : "comic"}-${i.serie.slug}`,
+                            //                             class: 'text-amber-300 text-xs font-light'
+                            //                         }, [ i.serie.name ]),
+                            //                         create('button', { title: 'Actualizar Link', class: 'absolute aspect-square rounded-full hover:bg-gray-800 transition-background-color text-rose-300 sf-ripple-container', style: 'height: 20px; width: 20px; right: 0; justify-content: center; align-items: center; display: none;' }, [
+                            //                             create('i', { class: 'text-2xl i-heroicons-exclamation-triangle', style: 'height: 16px; width: 16px;' })
+                            //                         ])
+                            //                     ]),
+                            //                 ])
+                            //             ])
+                            //         ])
+                            //         const fix_button = element.getChild('figure').getChild('div').getChild('div[2]').getChild('button')
+                            //         const chapt_button = element.getChild('figure').getChild('div').getChild('div').getChild('a')
+                            //         const serie_button = element.getChild('figure').getChild('div').getChild('div[2]').getChild('a')
+    
+                            //         var Checked = false
+    
+                            //         if (i.disabled) {
+                            //             Checked = true
+    
+                            //             chapt_button.classList.add('text-slate-500')
+                                            
+                            //             serie_button.classList.add('text-amber-500')
+                            //             serie_button.classList.remove('text-amber-300')
+    
+                            //             fix_button.style.display = 'flex';
+                            //         }
+    
+                            //         async function CheckLinks(e) {
+                            //             e.preventDefault();
+                            //             if (!history[k].disabled && !Checked) {
+                            //                 Checked = true
+                            //                 try { await fetch(`https://${window.location.host}/api/series/${i.serie.slug}?type=${i.serie.type}`).then(response => {
+                            //                     history[k].disabled = !response.ok
+    
+                            //                     if (!response.ok) {
+                            //                         chapt_button.classList.add('text-slate-500')
+                                                        
+                            //                         serie_button.classList.add('text-amber-500')
+                            //                         serie_button.classList.remove('text-amber-300')
+    
+                            //                         fix_button.style.display = 'flex';
+                            //                     }
+    
+                            //                     storageArea.set({
+                            //                         history: history
+                            //                     })
+                            //                 }) } catch (error) {}
+                            //             }
+                            //             if (history[k].disabled) return
+    
+                            //             if (e.button === 1 || (e.ctrlKey || e.metaKey)) {
+                            //                 window.open(this.href, '_blank')
+                            //             } else {
+                            //                 window.location.href = this.href
+                            //             }
+                            //         }
+    
+                            //         chapt_button.addEventListener("click", CheckLinks);
+                            //         serie_button.addEventListener("click", CheckLinks);
+                                    
+                            //         SetButton(fix_button, async function() {
+                            //             const serie = await SearchSerie(i.serie.name, i.serie.type)
+    
+                            //             if (serie) {
+                            //                 history[k].serie = JSON.parse(await fetch(`https://${window.location.host}/api/series/${serie.slug}?type=${serie.type}`).then(response => response.text())).data
+                            //                 delete history[k].disabled;
+    
+                            //                 element.innerHTML = ''
+                            //                 newElement(history[k]).$$children.map(e => element.appendChild(e))
+    
+                            //                 storageArea.set({
+                            //                     history: history
+                            //                 })
+                            //             }
+                            //         })
+    
+                            //         return element
+                            //     }
+    
+                            //     await history_container.appendChild(newElement(i))
+                            // })
                             series.map(i => {
                                 function newElement(i) {
                                     const element = create('figure', { class: 'relative overflow-hidden rounded-md snap-start', style:'min-width: 160px; width: 160px; margin: 5px;' }, [
